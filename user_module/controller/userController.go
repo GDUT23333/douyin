@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	 "net/http"
+	"net/http"
 	"user_module/model"
 	"user_module/service"
 )
@@ -26,7 +26,7 @@ type User struct{
 //用户信息响应体
 type UserInfoResponse struct{
 	model.Response
-	User User
+	User User ``
 }
 
 //注册响应体
@@ -56,8 +56,8 @@ func Login(ctx *gin.Context){
 	}else{
 		ctx.JSON(http.StatusOK, UserLoginResponse{
 			Response: model.Response{
-				StatusCode: -1,
-				StatusMsg:  err.Error(),
+				StatusCode: 0,
+				StatusMsg:  "Success",
 			},
 			UserId: id,
 			Token: token,
@@ -68,7 +68,7 @@ func Login(ctx *gin.Context){
 func Registry(ctx *gin.Context) {
 	userName := ctx.Query("username")
 	password := ctx.Query("password")
-	id,err := userService.RegistryUserInfo(userName, password)
+	id,token,err := userService.RegistryUserInfo(userName, password)
 	if err != nil {
 		ctx.JSON(http.StatusOK, UserRegistryResponse{
 			Response: model.Response{
@@ -83,13 +83,13 @@ func Registry(ctx *gin.Context) {
 				StatusMsg : "Success",
 			},
 			UserId: id,
-			Token : "token",
+			Token : token,
 		})
 	}
 }
 //获取用户信息
 func ShowUserInfo(ctx *gin.Context) {
-	id := ctx.Query("id")
+	id := ctx.Query("user_id")
 	token := ctx.Query("token")
 	userId,nickName, err := userService.GetUserInfo(id, token)
 	if err != nil{

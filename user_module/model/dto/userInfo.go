@@ -7,10 +7,10 @@ package dto
  **/
 
 type UserInfo struct{
-	ID int64 `grom:"column:id"`
-	UserName string `grom:"column:user_name"`
-	UserPassWord string `grom:"column:user_password"`
-	UserNick string `grom:"column:user_nick"`
+	ID int64 `gorm:"column:id"`
+	UserName string `gorm:"column:user_name"`
+	UserPassWord string `gorm:"column:user_password"`
+	UserNick string `gorm:"column:user_nick"`
 }
 func (u *UserInfo) TableName()string{
 	return "user_info"

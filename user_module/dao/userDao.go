@@ -34,7 +34,7 @@ func (u *UserDaoImpl) GetUserInfoByName(userName string) *dto.UserInfo {
 	return &userInfo
 }
 func (u *UserDaoImpl) InsertUserInfo(userInfo *dto.UserInfo) (count int64 ,err error){
-	result := UserDB.Create(userInfo)
+	result := UserDB.Create(&userInfo)
 	count = result.RowsAffected
 	err = result.Error
 	return

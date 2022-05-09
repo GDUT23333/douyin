@@ -2,10 +2,13 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"strconv"
 	"sync"
 	"user_module/dao"
 	"user_module/model/dto"
+	"user_module/utils"
 )
 
 /**
@@ -18,7 +21,7 @@ type UserService interface {
 	//获取用户信息
 	GetUserInfo(id string,token string) (useId int64,nickName string,err error)
 	//注册用户
-	RegistryUserInfo(username string,password string) (id int64,err error)
+	RegistryUserInfo(username string,password string) (id int64,token string,err error)
 	//用户登录
 	Login(userName string,password string) (userId int64,token string,err error)
 }
@@ -26,14 +29,11 @@ type UserService interface {
 type UserServiceImpl struct{
 	userDao dao.UserDao
 }
-//校验token
-func (s *UserServiceImpl) verifyToken(token string) bool{
-	return true
-}
 
 func (s *UserServiceImpl) GetUserInfo(id string,token string) (userId int64,nickName string,err error) {
 	//verifyToken
-	if(!s.verifyToken(token)){
+	if _,_,err := utils.VerifyToken(token) ; err != nil{
+		log.Fatal(err)
 		return -1,"",errors.New("token not correct")
 	}
 	//str change int64
@@ -44,39 +44,53 @@ func (s *UserServiceImpl) GetUserInfo(id string,token string) (userId int64,nick
 	return
 }
 
-func (s *UserServiceImpl) RegistryUserInfo(username string,password string) (id int64, err error){
+func (s *UserServiceImpl) RegistryUserInfo(username string,password string) (id int64,token string, err error){
+	//verify
+	 if !utils.VerifyParams(username, password){
+	 	fmt.Println("username :",username,";","password:",password," not throug verify...")
+	 	return -1,"",errors.New("input is not correct...")
+	 }
+	encryption, encryErr := utils.Md5Encryption(password)
+	if encryErr != nil{
+		return -1,"",encryErr
+	}
 	info := &dto.UserInfo{
 		UserName: username,
-		UserPassWord:password,
+		UserPassWord:encryption,
+		UserNick: username,
 	}
 	//insert record
 	_, insertErr := s.userDao.InsertUserInfo(info)
 	if insertErr != nil{
-		return -1, insertErr
+		return -1,"", insertErr
 	}
-	return info.ID,nil
+	return info.ID,utils.GenerateToken(info),nil
 }
 
 func (s *UserServiceImpl) Login(userName string,password string) (userId int64,token string,err error){
-	if !s.verifyToken(token) {
-		return -1,"",errors.New("token not correct")
+	//search info
+	info := s.userDao.GetUserInfoByName(userName)
+	if info == nil{
+		return -1,"",errors.New("user not exist")
 	}
-	//查找Info
-	info := s.userDao.GetUserInfoById(userId)
 	if !s.verifyPassword(password,info.UserPassWord){
 		return -1,"",errors.New("password not correct")
 	}
-	return info.ID,s.generateToken(info),nil
+	//create token then return
+	return info.ID,utils.GenerateToken(info),nil
 }
 
 //校验密码
 func (s *UserServiceImpl) verifyPassword(password string,origin string) bool{
-	return true
+	encryption, err := utils.Md5Encryption(password)
+	if err != nil{
+		log.Fatal(err)
+		return false
+	}
+	return encryption == origin
 }
-//生成Token
-func (s *UserServiceImpl) generateToken(info *dto.UserInfo) string{
-	return "token"
-}
+
+
 var(
 	userService UserService
 	userServiceOnce sync.Once
