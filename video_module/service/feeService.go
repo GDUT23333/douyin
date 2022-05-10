@@ -44,6 +44,16 @@ func (f *FeeServiceImpl) GetPublishFees(id string,token string)(list []vo.VideoV
 	fees := f.feeDao.GetFeesByUserID(userId)
 	//dto change vo
 	vos := make([]vo.VideoVo,len(fees))
+	//get userinfo by id
+	info := utils.GetUserInfo(userId)
+	uservo := vo.UserVo{
+		ID: info.Id,
+		Name: info.Name,
+		FollowCount: info.FollowCount,
+		FollowerCount: info.FollowerCount,
+		IsFollow: info.IsFollow,
+	}
+	//pacage vos
 	for index,fee := range(fees){
 		vos[index] = vo.VideoVo{
 			ID : fee.ID,
@@ -51,9 +61,10 @@ func (f *FeeServiceImpl) GetPublishFees(id string,token string)(list []vo.VideoV
 			CoverUrl: fee.CoverUrl,
 			FavoriteCount: fee.ApproveCount,
 			CommentCount: fee.CommentCount,
+			Author: uservo,
 		}
 	}
-	//todo rpc call user_module get user info
+
 	return vos,nil
 }
 func (f *FeeServiceImpl) PublishFee(token string,id string,data *multipart.FileHeader,c *gin.Context) (count int64,err error){

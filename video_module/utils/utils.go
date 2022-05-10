@@ -1,7 +1,11 @@
 package utils
 
 import (
+	"context"
 	"github.com/dgrijalva/jwt-go"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"video_module/douyinRpc"
 )
 
 /**
@@ -40,4 +44,17 @@ func VerifyToken(token string)(*jwt.Token, *jwt.StandardClaims, error){
 		return jwtkey, nil
 	})
 	return t, Claims, err
+}
+
+//rpc server
+//GetUserInfo
+func GetUserInfo(id int64) *douyinRpc.UserResponse{
+	//create conn
+	conn,_ := grpc.Dial(":8002", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	defer conn.Close()
+	//create client
+	client := douyinRpc.NewRpcUserServiceClient(conn)
+	//dial
+	response,_ := client.GetUserInfo(context.Background(), &douyinRpc.UserRequest{Id: id})
+	return response
 }
