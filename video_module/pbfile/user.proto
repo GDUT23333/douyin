@@ -1,0 +1,24 @@
+//指定当前proto语法的版本，有2和3
+syntax = "proto3";
+//指定生成的go文件所属的包名，也就是该proto反序列化形成的文件，放在上一层的service下
+option go_package="../douyinRpc";
+//指定go文件所属的包名
+package rpctest;
+
+//定义request model
+message UserRequest{
+  int64 id = 1;
+}
+//定义response model
+message UserResponse{
+  int64 id = 1;
+  string name = 2;
+  int64 followCount = 3;
+  int64 followerCount = 4;
+  bool isFollow = 5;
+}
+//定义服务主体
+service RpcUserService{
+  //请求方法
+  rpc GetUserInfo(UserRequest) returns(UserResponse);
+}
