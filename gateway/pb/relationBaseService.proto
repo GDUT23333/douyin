@@ -1,0 +1,67 @@
+syntax = "proto2";
+//指定生成的go文件所属的包名，也就是该proto反序列化形成的文件，放在上一层的service下
+option go_package="../relation_rpc_service";
+//指定go文件所属的包名
+package rpcrelation;
+import "google/api/annotations.proto";
+message douyin_relation_action_request{
+  required int64 user_id = 1;
+  required string token = 2;
+  required int64 to_user_id = 3;
+  required int32 action_type = 4;
+}
+
+message douyin_relation_action_response{
+  required int32 status_code = 1;
+  optional string status_msg = 2;
+}
+
+message douyin_relation_follow_list_request{
+  required int64 user_id = 1;
+  required string token = 2;
+}
+
+message douyin_relation_follow_list_response{
+  required int32 status_code = 1;
+  optional string status_msg = 2;
+  repeated User user_list = 3;
+}
+
+message douyin_relation_follower_list_request{
+  required int64 user_id = 1;
+  required string token = 2;
+}
+message douyin_relation_follower_list_response{
+  required int32 status_code = 1;
+  optional string status_msg = 2;
+  repeated User user_list = 3;
+}
+message User{
+  required int64 id = 1;
+  required string name = 2;
+  optional int64 follow_count = 3;
+  optional int64 follower_count = 4;
+  optional bool is_follow = 5;
+}
+
+service RelationBaseService{
+  //rpc relation action
+  rpc RelationAction(douyin_relation_action_request) returns(douyin_relation_action_response){
+    option (google.api.http) = {
+      post: "/douyin/relation/action"
+      body: "*"
+    };
+  };
+  //rpc relation follow list
+  rpc RelationFollowList(douyin_relation_follow_list_request) returns(douyin_relation_follow_list_response){
+    option (google.api.http) = {
+      get: "/douyin/follow/list"
+    };
+  };
+  //rpc relation follower list
+  rpc RelationFollowerList(douyin_relation_follower_list_request) returns(douyin_relation_follower_list_response){
+    option (google.api.http) = {
+      get: "/douyin/follower/list"
+    };
+  };
+}

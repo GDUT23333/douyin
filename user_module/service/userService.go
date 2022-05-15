@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 	"sync"
 	"user_module/dao"
 	"user_module/model/dto"
@@ -19,7 +18,7 @@ import (
 
 type UserService interface {
 	//获取用户信息
-	GetUserInfo(id string,token string) (useId int64,nickName string,err error)
+	GetUserInfo(id int64,token string) (useId int64,nickName string,err error)
 	//注册用户
 	RegistryUserInfo(username string,password string) (id int64,token string,err error)
 	//用户登录
@@ -30,15 +29,13 @@ type UserServiceImpl struct{
 	userDao dao.UserDao
 }
 
-func (s *UserServiceImpl) GetUserInfo(id string,token string) (userId int64,nickName string,err error) {
+func (s *UserServiceImpl) GetUserInfo(id int64,token string) (userId int64,nickName string,err error) {
 	//verifyToken
 	if _,_,err := utils.VerifyToken(token) ; err != nil{
 		log.Fatal(err)
 		return -1,"",errors.New("token not correct")
 	}
-	//str change int64
-	userId, err = strconv.ParseInt(id,10,64)
-	info := s.userDao.GetUserInfoById(userId)
+	info := s.userDao.GetUserInfoById(id)
 	nickName = info.UserNick
 	//生成vo
 	return

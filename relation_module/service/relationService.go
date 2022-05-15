@@ -21,7 +21,7 @@ type RelationService interface{
 	// relation action
 	// actionType = 1 => action
 	// actionType = 2 => cancel action
-	Action(userId string,token string,toUserId string,actionType string) error
+	Action(userId int64,token string,toUserId int64,actionType int32) error
 	//get user follow list
 	GetUserFollowList(token string,userId string)(error,[]vo.UserVo)
 	//get user follower list
@@ -30,7 +30,7 @@ type RelationService interface{
 type RelationServiceImpl struct{
 	relationDao dao.RelationDao
 }
-func (r *RelationServiceImpl)Action(userId string,token string,toUserId string,actionType string) (err error){
+func (r *RelationServiceImpl)Action(userId int64,token string,toUserId int64,actionType int32) (err error){
 	//verify token
 	_, _, err = utils.VerifyToken(token)
 	if err != nil{
@@ -38,33 +38,17 @@ func (r *RelationServiceImpl)Action(userId string,token string,toUserId string,a
 		return
 	}
 	//check params
-	if !utils.VerifyParams(userId,toUserId,actionType) {
-		fmt.Println("params is empty..")
-		return errors.New("params.isEmpty")
-	}
-
-	//change params to int
-	uId, err := strconv.ParseInt(userId, 10, 64)
-	if err != nil{
-		fmt.Println("uid to int failed:",err.Error())
-		return
-	}
-	toUid, err := strconv.ParseInt(toUserId, 10, 64)
-	if err != nil{
-		fmt.Println("toUid to int failed:",err.Error())
-		return
-	}
 	//package
 	relation := &dto.Relation{
-		UserId: uId,
-		FollowId: toUid,
+		UserId: userId,
+		FollowId: toUserId,
 	}
 	//choose service
 	switch actionType{
-	case "1":{
+	case 1:{
 		r.relationDao.Action(relation)
 	}
-	case "2":{
+	case 2:{
 		r.relationDao.CancelAction(relation)
 	}
 	}

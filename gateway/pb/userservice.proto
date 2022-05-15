@@ -1,0 +1,76 @@
+//指定当前proto语法的版本，有2和3
+syntax = "proto3";
+//指定生成的go文件所属的包名，也就是该proto反序列化形成的文件，放在上一层的service下
+option go_package="../user_rpc_service";
+//指定go文件所属的包名
+package rpcuser;
+//http 转 rpc
+import "google/api/annotations.proto";
+
+message douyin_user_register_request{
+  string username = 1;
+  string password = 2;
+}
+
+message douyin_user_register_response{
+  int32 status_code = 1;
+  string status_msg = 2;
+  string user_id = 3;
+  string token = 4;
+}
+
+message douyin_user_login_request{
+  string username = 1;
+  string password = 2;
+}
+
+message douyin_user_login_response{
+  int32 status_code = 1;
+  string status_msg = 2;
+  int64 user_id = 3;
+  string token = 4;
+}
+
+message douyin_user_request{
+  int64 user_id = 1;
+  string token = 2;
+}
+
+message douyin_user_response{
+  int32 status_code = 1;
+  string status_msg = 2;
+  User user = 3;
+}
+
+message User{
+  int64 id = 1;
+  string name = 2;
+  int64 follow_count = 3;
+  int64 follower_count = 4;
+  bool is_follow = 5;
+}
+
+service UserBaseService{
+  //login service
+  rpc Login(douyin_user_login_request) returns(douyin_user_login_response){
+    option (google.api.http) = {
+      post: "/douyin/user/login"
+      body: "*"
+    };
+  };
+  //register service
+  rpc Register(douyin_user_register_request) returns(douyin_user_login_response){
+    option (google.api.http) = {
+      post: "/douyin/user/register"
+      body: "*"
+    };
+  };
+  //show user info service
+  rpc ShowUserInfo(douyin_user_request) returns (douyin_user_response){
+    option (google.api.http) = {
+      post: "/douyin/user"
+      body: "*"
+    };
+  };
+
+}

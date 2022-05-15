@@ -1,0 +1,50 @@
+syntax = "proto2";
+
+//指定生成的go文件所属的包名，也就是该proto反序列化形成的文件，放在上一层的service下
+option go_package="../comment_rpc_service";
+//指定go文件所属的包名
+package rpccomment;
+
+message douyin_comment_action_request{
+  required int64 user_id = 1;
+  required string token = 2;
+  required int64 video_id = 3;
+  required int32 action_type = 4;
+  optional string comment_text = 5;
+  optional int64 comment_id = 6;
+}
+
+message douyin_comment_action_response{
+  required int32 status_code = 1;
+  required string status_msg = 2;
+}
+
+message douyin_comment_list_request{
+  required int64 user_id = 1;
+  required string token = 2;
+  required int64 video_id = 3;
+}
+message douyin_comment_list_response{
+  required int32 status_code = 1;
+  optional string status_msg = 2;
+  repeated Comment comment_list = 3;
+}
+message Comment{
+  required int64 id = 1;
+  required User user = 2;
+  required string content = 3;
+  required string create_date = 4;
+}
+message User{
+  required int64 id = 1;
+  required string name = 2;
+  optional int64 follow_count = 3;
+  optional int64 follower_count = 4;
+  required bool is_follow = 5;
+}
+service CommentBaseService{
+  //rpc comment action
+  rpc CommentAction(douyin_comment_action_request) returns(douyin_comment_action_response);
+  //rpc comment list
+  rpc CommentList(douyin_comment_list_request) returns(douyin_comment_list_response);
+}

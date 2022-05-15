@@ -1,0 +1,83 @@
+//指定当前proto语法的版本，有2和3
+syntax = "proto2";
+//指定生成的go文件所属的包名，也就是该proto反序列化形成的文件，放在上一层的service下
+option go_package="../video_rpc_service";
+//指定go文件所属的包名
+package rpcuvideo;
+//http 转 rpc
+import "google/api/annotations.proto";
+message douyin_feed_request{
+  optional int64 latest_time = 1;
+}
+message douyin_feed_response{
+  required int32 status_code = 1;
+  optional string status_msg = 2;
+  repeated Video video_list = 3;
+  optional int64 next_time = 4;
+}
+
+message Video{
+  required int64 id = 1;
+  required User author = 2;
+  required string play_url = 3;
+  required string cover_url = 4;
+  required int64 favorite_count = 5;
+  required int64 comment_count = 6;
+  required bool is_favorite = 7;
+}
+
+message User{
+  required int64 id = 1;
+  required string name = 2;
+  optional int64 follow_count = 3;
+  optional int64 follower_count = 4;
+  optional bool is_follow = 5;
+}
+
+message douyin_publish_action_request{
+  required int64 user_id = 1;
+  required string token = 2;
+  required bytes data = 3;
+}
+
+message douyin_publish_action_response{
+  required int32 status_code = 1;
+  optional string status_msg = 2;
+}
+
+message douyin_publish_list_request{
+  required int64 user_id = 1;
+  required string token = 2;
+}
+
+message douyin_publish_list_response{
+  required int32 status_code = 1;
+  required string status_msg = 2;
+  repeated Video video_list = 3;
+}
+
+
+service VideoBaseService{
+  //push feed
+  rpc PushFeed(douyin_feed_request) returns (douyin_feed_response){
+    option (google.api.http) = {
+      get: "/douyin/feed"
+    };
+  };
+  //publish video
+  rpc PublishFee(douyin_publish_action_request) returns(douyin_publish_action_response){
+    option (google.api.http) = {
+      post: "/douyin/publish/action"
+      body: "*"
+    };
+  };
+  //get fees
+  rpc GetPublishFees(douyin_publish_list_request) returns(douyin_publish_list_response){
+    option (google.api.http) = {
+      post: "/douyin/publish/list"
+      body: "*"
+    };
+  };
+}
+
+

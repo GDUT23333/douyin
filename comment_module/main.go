@@ -1,10 +1,16 @@
 package comment_module
 
 import (
-	"github.com/gin-gonic/gin"
-	"sync"
+	"comment_module/comment_rpc_service"
 	"comment_module/controller"
 	"comment_module/dao"
+	"comment_module/handler"
+	"github.com/asim/go-micro/plugins/registry/zookeeper/v3"
+	"github.com/asim/go-micro/v3"
+	"github.com/asim/go-micro/v3/logger"
+	"github.com/asim/go-micro/v3/registry"
+	"github.com/gin-gonic/gin"
+	ser "comment_module/service"
 )
 
 /**
@@ -12,23 +18,33 @@ import (
  * @Date: 2022/5/11 12:47
  * @Description: TODO
  **/
+const(
+	ServerName = "douyin_comment"
+)
 
-func main(){
-	//initial
-	waitGroup := sync.WaitGroup{}
-	waitGroup.Add(2)
-	go func() {
-		dao.InitialDB()
-		waitGroup.Done()
-	}()
-	r := gin.Default()
-	go func() {
-		InitRouter(r)
-		waitGroup.Done()
-	}()
-	waitGroup.Wait()
-	//start
-	r.Run()
+func main() {
+	dao.InitialDB()
+	//micro registry
+	newRegistry := zookeeper.NewRegistry(
+		registry.Addrs("192.168.160.132:2181"))
+	service := micro.NewService(
+		micro.Name(ServerName),
+		micro.Address(":8082"),
+		micro.Registry(newRegistry),
+	)
+	service.Init()
+	//register user base service
+	err := comment_rpc_service.RegisterCommentBaseServiceHandler(service.Server(),&handler.CommentHandler{
+		CommentService: ser.GetCommentService(),
+	})
+	if err != nil{
+		logger.Fatal(err)
+	}
+	//run
+	err = service.Run()
+	if err != nil{
+		logger.Fatal(err)
+	}
 }
 
 //初始化路由

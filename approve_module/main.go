@@ -1,12 +1,20 @@
 package main
 
 import (
-	"approve_module/dao"
-	"github.com/gin-gonic/gin"
-	"sync"
+	"approve_module/approve_rpc_service"
 	"approve_module/controller"
+	"approve_module/dao"
+	ser "approve_module/service"
+	"approve_module/handler"
+	"github.com/asim/go-micro/plugins/registry/zookeeper/v3"
+	"github.com/asim/go-micro/v3"
+	"github.com/asim/go-micro/v3/logger"
+	"github.com/asim/go-micro/v3/registry"
+	"github.com/gin-gonic/gin"
 )
-
+const(
+	ServerName = "douyin.approve"
+)
 /**
  * @Author: Ember
  * @Date: 2022/5/11 10:07
@@ -14,21 +22,28 @@ import (
  **/
 
 func main(){
-	//initial
-	waitGroup := sync.WaitGroup{}
-	waitGroup.Add(2)
-	go func() {
-		dao.InitialDB()
-		waitGroup.Done()
-	}()
-	r := gin.Default()
-	go func() {
-		InitRouter(r)
-		waitGroup.Done()
-	}()
-	waitGroup.Wait()
-	//start
-	r.Run()
+	dao.InitialDB()
+	//micro registry
+	newRegistry := zookeeper.NewRegistry(
+		registry.Addrs("192.168.160.132:2181"))
+	service := micro.NewService(
+		micro.Name(ServerName),
+		micro.Address(":8083"),
+		micro.Registry(newRegistry),
+	)
+	service.Init()
+	//register user base service
+	err := approve_rpc_service.RegisterApproveBaseServiceHandler(service.Server(),&handler.ApproveHandler{
+		ApproveService: ser.GetApproveService(),
+			})
+	if err != nil{
+		logger.Fatal(err)
+	}
+	//run
+	err = service.Run()
+	if err != nil{
+		logger.Fatal(err)
+	}
 }
 
 //初始化路由

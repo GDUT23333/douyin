@@ -1,13 +1,12 @@
 package service
 
 import (
+	"comment_module/comment_rpc_service"
 	"comment_module/dao"
 	"comment_module/model/dto"
-	"comment_module/model/vo"
 	"comment_module/utils"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 )
 
@@ -18,16 +17,16 @@ import (
  **/
 type CommentService interface{
 	//public action
-	PublicAction(userId string,token string,videoId string,commentText string)error
+	PublicAction(userId int64,token string,videoId int64,commentText string)error
 	//del action
-	DelAction(userId string,token string,videoId string,commentId string) error
+	DelAction(userId int64,token string,videoId int64,commentId int64) error
 	//comment list
-	CommentList(userId string,token string,videoId string)(list []vo.CommentVo,err error)
+	CommentList(userId int64,token string,videoId int64)(list []*comment_rpc_service.Comment,err error)
 }
 type CommentServiceImpl struct{
 	commentDao dao.CommentDao
 }
-func (c *CommentServiceImpl) PublicAction(userId string,token string,videoId string,commentText string) (err error){
+func (c *CommentServiceImpl) PublicAction(userId int64,token string,videoId int64,commentText string) (err error){
 	//verify token
 	_, _, err = utils.VerifyToken(token)
 	if err != nil{
@@ -35,100 +34,54 @@ func (c *CommentServiceImpl) PublicAction(userId string,token string,videoId str
 		return
 	}
 	//check params
-	flag := utils.VerifyParams(userId, videoId, commentText)
+	flag := utils.VerifyParams(commentText)
 	if !flag{
 		fmt.Println("params is empty...")
 		err = errors.New("params is empty..")
 		return
 	}
-	//change params
-	uId,err := strconv.ParseInt(userId,10,64)
-	if err != nil{
-		fmt.Println("user id change int64 failed:",err.Error())
-		return
-	}
-	vId ,err := strconv.ParseInt(videoId,10,64)
-	if err != nil{
-		fmt.Println("video id change int64 failed:",err.Error())
-		return
-	}
 	//package
 	comment := &dto.Comment{
-		UserId: uId,
-		VideoId: vId,
+		UserId: userId,
+		VideoId: videoId,
 		CommentText: commentText,
 		ActionType: 1,
 	}
 	err = c.commentDao.CreateComment(comment)
 	return
 }
-func (c *CommentServiceImpl) DelAction(userId string,token string,videoId string,commentId string) (err error){
+func (c *CommentServiceImpl) DelAction(userId int64,token string,videoId int64,commentId int64) (err error){
 	//verify token
 	_, _, err = utils.VerifyToken(token)
 	if err != nil{
 		fmt.Println("verify token failed..")
 		return
 	}
-	//check params
-	flag := utils.VerifyParams(userId, videoId, commentId)
-	if !flag{
-		fmt.Println("params is empty...")
-		err = errors.New("params is empty..")
-		return
-	}
-	//change params
-	uId,err := strconv.ParseInt(userId,10,64)
-	if err != nil{
-		fmt.Println("user id change int64 failed:",err.Error())
-		return
-	}
-	vId ,err := strconv.ParseInt(videoId,10,64)
-	if err != nil{
-		fmt.Println("video id change int64 failed:",err.Error())
-		return
-	}
 	//package data
 	comment := &dto.Comment{
-		UserId: uId,
-		VideoId: vId,
+		UserId: userId,
+		VideoId: videoId,
 		ActionType: 1,
 	}
 	err = c.commentDao.DelComment(comment)
 	return
 }
-func (c *CommentServiceImpl) CommentList(userId string,token string,videoId string)(list []vo.CommentVo,err error){
+func (c *CommentServiceImpl) CommentList(userId int64,token string,videoId int64)(list []*comment_rpc_service.Comment,err error){
 	//verify token
 	_, _, err = utils.VerifyToken(token)
 	if err != nil{
 		fmt.Println("verify token failed..")
 		return
 	}
-	//check params
-	flag := utils.VerifyParams(userId, videoId)
-	if !flag{
-		fmt.Println("params is empty...")
-		err = errors.New("params is empty..")
-		return
-	}
-	//change params
-	uId,err := strconv.ParseInt(userId,10,64)
-	if err != nil{
-		fmt.Println("user id change int64 failed:",err.Error())
-		return
-	}
-	vId ,err := strconv.ParseInt(videoId,10,64)
-	if err != nil{
-		fmt.Println("video id change int64 failed:",err.Error())
-		return
-	}
-	commentList, err := c.commentDao.GetCommentList(uId, vId)
+
+	commentList, err := c.commentDao.GetCommentList(userId, videoId)
 	//dto change vo
-	commentVoList := make([]vo.CommentVo,len(commentList))
+	commentVoList := make([]*comment_rpc_service.Comment,len(commentList))
 	for _,comment := range(commentList){
-		commentVoList = append(commentVoList,vo.CommentVo{
-			Id:comment.ID,
-			Content: comment.CommentText,
-			CreateDate: comment.CreateTime,
+		commentVoList = append(commentVoList,&comment_rpc_service.Comment{
+			Id:&comment.ID,
+			Content: &comment.CommentText,
+			CreateDate: &comment.CreateTime,
 		})
 	}
 	//todo rpc patch get userinfo

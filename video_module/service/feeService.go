@@ -2,16 +2,13 @@ package service
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"mime/multipart"
 	"path/filepath"
-	"strconv"
 	"sync"
 	"time"
 	"video_module/dao"
 	"video_module/model/dto"
-	"video_module/model/vo"
 	"video_module/utils"
+	"video_module/video_rpc_service"
 )
 
 /**
@@ -21,81 +18,72 @@ import (
  **/
 
 type FeeService interface {
+	//推送视频
+	PushFeed(latestTime int64)(list []*video_rpc_service.Video,nextTime int64,err error)
 	//用户根据自己的ID获取自己的视频发布列表
-	GetPublishFees(id string,token string) (list []vo.VideoVo,err error)
+	GetPublishFees(id int64,token string) (list []*video_rpc_service.Video,err error)
 	//发布视频
-	PublishFee(token string,id string,data *multipart.FileHeader,c *gin.Context) (count int64,err error)
+	PublishFee(token string,id int64,data []byte) (count int64,err error)
 }
 
 type FeeServiceImpl struct{
 	feeDao dao.FeeDao
 }
-func (f *FeeServiceImpl) GetPublishFees(id string,token string)(list []vo.VideoVo,err error){
+func (f *FeeServiceImpl) GetPublishFees(id int64,token string)(list []*video_rpc_service.Video,err error){
 	//verify token
 	_, _, err = utils.VerifyToken(token)
 	if err != nil{
 		return
 	}
-	userId, err := strconv.ParseInt(id, 10, 64)
-	if err != nil{
-		return
-	}
 	//get user fees
-	fees := f.feeDao.GetFeesByUserID(userId)
+	fees := f.feeDao.GetFeesByUserID(id)
 	//dto change vo
-	vos := make([]vo.VideoVo,len(fees))
-	//get userinfo by id
-	info := utils.GetUserInfo(userId)
-	uservo := vo.UserVo{
-		ID: info.Id,
-		Name: info.Name,
-		FollowCount: info.FollowCount,
-		FollowerCount: info.FollowerCount,
-		IsFollow: info.IsFollow,
-	}
+	vos := make([]*video_rpc_service.Video,len(fees))
+	// TODO  RPC Service
+	//get userinfo by i
 	//pacage vos
 	for index,fee := range(fees){
-		vos[index] = vo.VideoVo{
-			ID : fee.ID,
-			PlayUrl: fee.PlayUrl,
-			CoverUrl: fee.CoverUrl,
-			FavoriteCount: fee.ApproveCount,
-			CommentCount: fee.CommentCount,
-			Author: uservo,
+		vos[index] = &video_rpc_service.Video{
+			Id : &fee.ID,
+			PlayUrl: &fee.PlayUrl,
+			CoverUrl: &fee.CoverUrl,
+			FavoriteCount: &fee.ApproveCount,
+			CommentCount: &fee.CommentCount,
+			Author: nil,
 		}
 	}
 
 	return vos,nil
 }
-func (f *FeeServiceImpl) PublishFee(token string,id string,data *multipart.FileHeader,c *gin.Context) (count int64,err error){
+func (f *FeeServiceImpl) PublishFee(token string,id int64,data []byte) (count int64,err error){
 	//Verify Token
 	_, _, err = utils.VerifyToken(token)
 	if err != nil{
 		return
 	}
-	userId, err := strconv.ParseInt(id, 10, 64)
-	if err != nil{
-		return
-	}
 	//Save Local
-	filename := filepath.Base(data.Filename)
-	finalName := fmt.Sprintf("%d_%s", userId, filename)
+	filename := filepath.Base("test")
+	finalName := fmt.Sprintf("%d_%s", id, filename)
 	saveFile := filepath.Join("./public/", finalName)
-	err = c.SaveUploadedFile(data, saveFile)
+	//permissions := 0644
+	//err := ioutil.WriteFile(saveFile, data, permissions)
 	if err != nil{
 		return
 	}
 	//package change dto
 	video := &dto.Video{
-		ID : userId,
+		ID : id,
 		PlayUrl: saveFile,
-		//todo  find coverurl?
+		//todo  where get coverurl?
 		CoverUrl: "",
 		ApproveCount: 0,
 		CommentCount: 0,
 		CreateTime: time.Now(),
 	}
 	return f.feeDao.CreateFee(video)
+}
+func(f *FeeServiceImpl )PushFeed(latestTime int64)(list []*video_rpc_service.Video,nextTime int64,err error){
+	return nil,0,nil
 }
 var(
 	feeService FeeService

@@ -6,7 +6,6 @@ import (
 	"approve_module/utils"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 )
 
@@ -18,47 +17,26 @@ import (
 
 type ApproveService interface{
 	//approve action
-	Action(token string,id string,videoId string,actionType string) error
+	Action(token string,id int64,videoId int64,actionType int32) error
 }
 type ApproveServiceImpl struct{
 	approveDao dao.ApproveDao
 }
-func (a *ApproveServiceImpl) Action(token string,id string,videoId string,actionType string) (err error){
+func (a *ApproveServiceImpl) Action(token string,id int64,videoId int64,actionType int32) (err error){
 	//verify token
 	_, _, err = utils.VerifyToken(token)
 	if err != nil{
 		fmt.Println("verify token failed:",err.Error())
 		return errors.New("token failed..")
 	}
-	//check params
-	verifuResult := utils.VerifyParams(id, videoId, actionType)
-	if !verifuResult{
-		return errors.New("params is not correct,may be empty")
-	}
-	//change params
-	userId,err := strconv.ParseInt(id,10,64)
-	if err != nil{
-		fmt.Println("user id changes failed:",err.Error())
-		return
-	}
-	vId,err := strconv.ParseInt(videoId,10,64)
-	if err != nil{
-		fmt.Println("video id changes failed:",err.Error())
-		return
-	}
-	atype,err := strconv.Atoi(actionType)
-	if err != nil{
-		fmt.Println("action type changes failed:",err.Error())
-		return
-	}
 	//package Action
 	videoAction := &dto.VideoAction{
-		UserID: userId,
-		ActionType: atype,
-		VideoID: vId,
+		UserID: id,
+		ActionType: actionType,
+		VideoID: videoId,
 	}
 	//dao service
-	switch atype {
+	switch actionType {
 	//approve
 	case 1:{
 		//todo update memory
@@ -70,6 +48,7 @@ func (a *ApproveServiceImpl) Action(token string,id string,videoId string,action
 		a.approveDao.CanCelApproveAction(videoAction)
 	}
 	}
+	return
 }
 //single create
 var(

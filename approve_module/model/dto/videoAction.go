@@ -14,5 +14,5 @@ type VideoAction struct{
 	//user key
 	UserID int64
 	//action type
-	ActionType int
+	ActionType int32
 }

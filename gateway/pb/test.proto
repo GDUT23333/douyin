@@ -1,0 +1,28 @@
+syntax="proto3";
+
+option go_package="../gateway_service";
+package microservice;
+
+import "google/api/annotations.proto";
+
+
+//rpc login service
+service RpcTestLoginService{
+  //rpc login
+  rpc TestLogin(test_login_request) returns(test_login_response){
+    option (google.api.http) = {
+      get: "/test/login"
+    };
+  };
+}
+message test_login_request{
+  string username = 1;
+  string password = 2;
+}
+
+message test_login_response{
+  int32 status_code = 1;
+  string status_msg = 2;
+  int64 user_id = 3;
+  string token = 4;
+}

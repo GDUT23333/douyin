@@ -1,16 +1,16 @@
 package main
 
 import (
+	"github.com/asim/go-micro/plugins/registry/zookeeper/v3"
+	"github.com/asim/go-micro/v3"
+	"github.com/asim/go-micro/v3/logger"
+	"github.com/asim/go-micro/v3/registry"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-	"google.golang.org/grpc"
-	"net/http"
-
-	"strings"
-	"sync"
-	"video_module/dao"
+	"video_module/handler"
 	"video_module/controller"
+	"video_module/dao"
+	feeService "video_module/service"
+	"video_module/video_rpc_service"
 )
 
 /**
@@ -18,47 +18,36 @@ import (
  * @Date: 2022/5/9 22:19
  * @Description: TODO
  **/
+const(
+	ServerName = "douyin.video"
+)
 
 func main(){
-	//initial
-	waitGroup := sync.WaitGroup{}
-	waitGroup.Add(2)
-	go func() {
-		dao.InitialDB()
-		waitGroup.Done()
-	}()
-	r := gin.Default()
-	grpcServer := grpc.NewServer()
-	go func() {
-		InitRouter(r)
-		// 判断协议是否为http/2
-		// 判断是否是grpc
-		r.Use(func(ctx *gin.Context) {
-			// 判断协议是否为http/2
-			// 判断是否是grpc
-			if ctx.Request.ProtoMajor == 2 &&
-				strings.HasPrefix(ctx.GetHeader("Content-Type"), "application/grpc") {
-				// 按grpc方式来请求
-				grpcServer.ServeHTTP(ctx.Writer, ctx.Request)
-				// 不要再往下请求了,防止继续链式调用拦截器
-				ctx.Abort()
-				return
-			}
-			// 当作普通api
-			ctx.Next()
-		})
-		waitGroup.Done()
-	}()
-	waitGroup.Wait()
-	// 为http/2配置参数
-	h2Handle := h2c.NewHandler(r, &http2.Server{}) // 禁用TLS加密协议
-	// 配置http服务
-	server := &http.Server{
-		Addr: ":8081",
-		Handler: h2Handle,
+	//initial DB
+	dao.InitialDB()
+	//initial server
+	//patch handler
+	newRegistry := zookeeper.NewRegistry(
+		registry.Addrs("192.168.160.132:2181"))
+	service := micro.NewService(
+			micro.Name(ServerName),
+			micro.Address(":8081"),
+			micro.Registry(newRegistry),
+		)
+	//register rpc service
+	//register user base service
+	err := video_rpc_service.RegisterVideoBaseServiceHandler(service.Server(),&handler.VideoHandler{
+		FeedService: feeService.GetFeeService(),
+	})
+	if err != nil{
+		logger.Fatal(err)
 	}
-	// 启动http服务
-	server.ListenAndServe()
+	service.Init()
+	//run
+	err = service.Run()
+	if err != nil{
+		logger.Fatal(err)
+	}
 }
 
 //初始化路由
